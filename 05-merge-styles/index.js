@@ -4,7 +4,7 @@ const path = require('path');
 const outDir = path.join(__dirname, 'styles');
 const inDir = path.join(__dirname, 'project-dist');
 
-async function makeBundle(outDir, inDir, fileName){
+async function makeCssBundle(outDir, inDir, fileName){
   try {
   const files = await fs.promises.readdir(outDir, {withFileTypes: true});
   const pathToSave = path.join(inDir, fileName);
@@ -28,4 +28,6 @@ async function makeBundle(outDir, inDir, fileName){
   }
 }
 
-makeBundle(outDir, inDir, 'bundle.css');
+makeCssBundle(outDir, inDir, 'bundle.css');
+
+module.exports = makeCssBundle;

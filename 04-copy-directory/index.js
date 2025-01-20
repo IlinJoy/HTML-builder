@@ -60,4 +60,9 @@ const copyDir = async (outDir, inDir) => {
 
 copyDir(outDir, inDir);
 
+module.exports ={
+  errHandler,
+  makeDir,
+  copyDir
+}
 
