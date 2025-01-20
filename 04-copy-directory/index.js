@@ -62,9 +62,9 @@ const copyDir = async (outD, inD) => {
   }
 }
 
-if (require.main === module) {
-  copyDir(outDir, inDir);
-}
+
+copyDir(outDir, inDir);
+
 
 module.exports ={
   errHandler,
