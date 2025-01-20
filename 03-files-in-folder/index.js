@@ -7,7 +7,7 @@ const combineWithSize = (itemPath, name, extension) => {
   return fs.stat(itemPath, (err, stats)=> {
     if(err) errHandler(err);
     size = stats.size;
-    console.log(`${name}-${extension}-${size}`);
+    console.log(`${name}-${extension}-${size}b`);
   })
 };
 
@@ -18,7 +18,7 @@ fs.readdir(folderPath, {withFileTypes: true}, (err, files) => {
   files.forEach(dirent => {
     if(dirent.isFile()){
       const itemPath = path.join(folderPath,dirent.name)
-      const extension = path.extname(itemPath);
+      const extension = path.extname(itemPath) || ' no-ext';
       const name = path.basename(itemPath, extension)
       combineWithSize(itemPath, name, extension.slice(1));
     }
