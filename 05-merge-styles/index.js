@@ -28,6 +28,9 @@ async function makeCssBundle(outDir, inDir, fileName){
   }
 }
 
-makeCssBundle(outDir, inDir, 'bundle.css');
+if(require.main === module){
+  makeCssBundle(outDir, inDir, 'bundle.css');
+}
+
 
 module.exports = makeCssBundle;

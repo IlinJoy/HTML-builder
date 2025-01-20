@@ -9,56 +9,62 @@ const checkSize = async (dir) => (await fs.stat(dir)).size
 
 const makeDir = async (dir) => {
   try{
-    await fs.mkdir(dir, { recursive: true });
+    await fs.access(dir);
   } catch (error){
-    if(error.code !== 'ENOENT') errHandler(error.code);
+    if(error.code === 'ENOENT') {
+      await fs.mkdir(dir, { recursive: true })
+    }else{
+     errHandler(error);
+    }
   }
 }
 
-const isSame = async (outDir, inDir) => {
+const isSame = async (outD, inD) => {
   try {
-    await fs.access(inDir);
-    const size1 = await checkSize(outDir);
-    const size2 = await checkSize(inDir);
+    const size1 = await checkSize(outD);
+    const size2 = await checkSize(inD);
     return size1 === size2;
   } catch (error) {
-    if(error.code !== 'ENOENT') errHandler(error.code);
-    return false;
+    if (error.code === 'ENOENT') return false;
+    errHandler(error);
   }
 }
 
-const copyDir = async (outDir, inDir) => {
+const copyDir = async (outD, inD) => {
   try {
-  await makeDir(inDir);
-  const filesToCopy = await fs.readdir(outDir, {withFileTypes: true, recursive: true});
-  const copiedFiles = await fs.readdir(inDir, {withFileTypes: true, recursive: true});
+  await makeDir(inD);
+  const filesToCopy = await fs.readdir(outD, {withFileTypes: true});
+  const copiedFiles = await fs.readdir(inD , {withFileTypes: true});
 
   for(const dirent of copiedFiles){
-    if(!filesToCopy.find(currentDirent => currentDirent.name === dirent.name)) {
-      await fs.rm(path.join(inDir, dirent.name), {recursive: true})
+    if(!filesToCopy.some(currentDirent => currentDirent.name === dirent.name)) {
+      await fs.rm(path.join(inD, dirent.name), {recursive: true})
     }
   }
 
-  for(const dirent of filesToCopy){
-    let currentOutDir = path.join(outDir, dirent.name);
-    let currentInDir = path.join(inDir, dirent.name);
+   for(const dirent of filesToCopy){
+     let currentOutDir = path.join(outD, dirent.name);
+     let currentInDir = path.join(inD, dirent.name);
 
-    if(dirent.isDirectory()) {
-    await copyDir(currentOutDir, currentInDir);
-    continue
+     const sameFiles = await isSame(currentOutDir, currentInDir)
+     if (sameFiles) {
+      continue;
+     }
+
+     if(dirent.isDirectory()) {
+        await copyDir(currentOutDir, currentInDir);
+      } else {
+        await fs.copyFile(currentOutDir, currentInDir);
+      }
     }
-
-    const sameFiles = await isSame(currentOutDir, currentInDir)
-    if(sameFiles) continue;
-    await fs.copyFile(currentOutDir, currentInDir);
-  }
-
   } catch (error) {
     errHandler(error);
   }
 }
 
-copyDir(outDir, inDir);
+if (require.main === module) {
+  copyDir(outDir, inDir);
+}
 
 module.exports ={
   errHandler,
