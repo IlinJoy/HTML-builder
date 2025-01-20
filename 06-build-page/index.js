@@ -1,22 +1,23 @@
-const fs = require('fs/promises');
+const fsPromises = require('fs/promises');
+const fs = require('fs');
 const path = require('path');
 
 async function readComponents(dir) {
   try {
     const components = {};
     const folderPath = path.join(__dirname, dir);
-    const files = await fs.readdir(folderPath, {withFileTypes:true});
+    const files = await fsPromises.readdir(folderPath, {withFileTypes:true});
 
     for (const dirent of files) {
       if(dirent.isFile()){
       const filePath = path.join(folderPath, dirent.name);
       const fileName = path.basename(filePath, path.extname(filePath));
-      components[fileName] = (await fs.readFile(filePath, 'utf-8')).trim();
+      components[fileName] = (await fsPromises.readFile(filePath, 'utf-8')).trim();
       }
     }
     return components;
   } catch (err) {
-    errHandler(err);
+    console.log(err);
   }
 }
 
@@ -25,14 +26,14 @@ async function buildHtml(dir, componentsDir){
     const filePath = path.join(__dirname, dir);
     const components = await readComponents(componentsDir);
     const tagsToReplace = Object.keys(components);
-    let html = await fs.readFile(filePath, 'utf-8');
+    let html = await fsPromises.readFile(filePath, 'utf-8');
 
     tagsToReplace.forEach((tag) => {
       html = html.replaceAll(`{{${tag}}}`, components[tag]);
     })
     return html;
   } catch (error) {
-    errHandler(error);
+    console.log(error);
   }
 }
 
@@ -46,19 +47,19 @@ async function build(){
 
     await makeDir(distDir);
     const html = await buildHtml('template.html', 'components');
-    await fs.writeFile(htmlPath, html);
+    await fsPromises.writeFile(htmlPath, html);
     await makeCssBundle(stylesPath, distDir, 'style.css');
     await copyDir(assetsPath, assetsDist);
   } catch (error) {
-    errHandler(error);
+    console.log(error);
   }
 }
 
 async function makeCssBundle(outDir, inDir, fileName){
   try {
-  const files = await fs.promises.readdir(outDir, {withFileTypes: true});
+  const files = await fsPromises.readdir(outDir, {withFileTypes: true});
   const pathToSave = path.join(inDir, fileName);
-  await fs.promises.writeFile(pathToSave, '');
+  await fsPromises.writeFile(pathToSave, '');
 
   for(const dirent of files){
     const filePath = path.join(outDir, dirent.name);
@@ -68,9 +69,7 @@ async function makeCssBundle(outDir, inDir, fileName){
       const writeStream = fs.createWriteStream(pathToSave, { flags: 'a' });
 
       readStream.on('data', (chunk) => writeStream.write(chunk.toString() + '\n'));
-      readStream.on('end', () => {
-        writeStream.end();
-      });
+      readStream.on('end', () => writeStream.end());
     }
   }
   } catch (error) {
@@ -78,47 +77,46 @@ async function makeCssBundle(outDir, inDir, fileName){
   }
 }
 
-const errHandler = (err) => console.log(err);
-const checkSize = async (dir) => (await fs.stat(dir)).size
+const checkSize = async (dir) => (await fsPromises.stat(dir)).size
 
 const makeDir = async (dir) => {
   try{
-    await fs.access(dir);
+    await fsPromises.access(dir);
   } catch (error){
     if(error.code === 'ENOENT') {
-      await fs.mkdir(dir, { recursive: true })
+      await fsPromises.mkdir(dir, { recursive: true })
     }else{
-     errHandler(error);
+     console.log(error);
     }
   }
 }
 
-const isSame = async (outD, inD) => {
+const isSame = async (outDir, inDir) => {
   try {
-    const size1 = await checkSize(outD);
-    const size2 = await checkSize(inD);
+    const size1 = await checkSize(outDir);
+    const size2 = await checkSize(inDir);
     return size1 === size2;
   } catch (error) {
     if (error.code === 'ENOENT') return false;
-    errHandler(error);
+    console.log(error);
   }
 }
 
-const copyDir = async (outD, inD) => {
+const copyDir = async (outDir, inDir) => {
   try {
-  await makeDir(inD);
-  const filesToCopy = await fs.readdir(outD, {withFileTypes: true});
-  const copiedFiles = await fs.readdir(inD , {withFileTypes: true});
+  await makeDir(inDir);
+  const filesToCopy = await fsPromises.readdir(outDir, {withFileTypes: true});
+  const copiedFiles = await fsPromises.readdir(inDir , {withFileTypes: true});
 
   for(const dirent of copiedFiles){
     if(!filesToCopy.some(currentDirent => currentDirent.name === dirent.name)) {
-      await fs.rm(path.join(inD, dirent.name), {recursive: true})
+      await fsPromises.rm(path.join(inDir, dirent.name), {recursive: true})
     }
   }
 
    for(const dirent of filesToCopy){
-     let currentOutDir = path.join(outD, dirent.name);
-     let currentInDir = path.join(inD, dirent.name);
+     let currentOutDir = path.join(outDir, dirent.name);
+     let currentInDir = path.join(inDir, dirent.name);
 
      const sameFiles = await isSame(currentOutDir, currentInDir)
      if (sameFiles) {
@@ -128,11 +126,11 @@ const copyDir = async (outD, inD) => {
      if(dirent.isDirectory()) {
         await copyDir(currentOutDir, currentInDir);
       } else {
-        await fs.copyFile(currentOutDir, currentInDir);
+        await fsPromises.copyFile(currentOutDir, currentInDir);
       }
     }
   } catch (error) {
-    errHandler(error);
+    console.log(error);
   }
 }
 
