@@ -141,3 +141,5 @@ const copyDir = async (outDir, inDir) => {
     console.log(error);
   }
 };
+
+build();
